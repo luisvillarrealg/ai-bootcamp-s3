@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  List, ListItem, ListItemText, IconButton, Checkbox, Typography, Box, CircularProgress, Paper, Chip
+  List, ListItem, ListItemText, IconButton, Checkbox, Typography, Box, CircularProgress, Paper, Chip,
+  Button
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import EventIcon from '@mui/icons-material/Event';
+import { PRIORITIES, normalizePriority } from './priority';
 
-function TaskList({ onEdit }) {
+function TaskList({ onEdit, onPriorityChange }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,6 +51,15 @@ function TaskList({ onEdit }) {
         body: JSON.stringify({ completed: !task.completed })
       });
       fetchTasks();
+    } catch (err) {
+      setError('Failed to update task');
+    }
+  };
+
+  const handlePriorityChange = async (task, priority) => {
+    if (normalizePriority(task.priority) === priority) return;
+    try {
+      await onPriorityChange(task, priority);
     } catch (err) {
       setError('Failed to update task');
     }
@@ -127,9 +137,11 @@ function TaskList({ onEdit }) {
           <ListItem 
             key={task.id} 
             sx={{ 
-              pr: 18,
+              pr: 1,
               py: 1,
               mb: 1,
+              flexWrap: 'wrap',
+              gap: 1,
               borderRadius: 2,
               background: task.completed 
                 ? 'rgba(158, 158, 158, 0.08)' 
@@ -193,16 +205,33 @@ function TaskList({ onEdit }) {
             />
             <Box 
               sx={{ 
-                position: 'absolute', 
-                right: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',
+                flexShrink: 0,
                 gap: 1
               }}
             >
+              <Box role="radiogroup" aria-label="Priority" sx={{ display: 'flex', gap: 0.5 }}>
+                {PRIORITIES.map(p => {
+                  const selected = normalizePriority(task.priority) === p;
+                  return (
+                    <Button
+                      key={p}
+                      role="radio"
+                      aria-checked={selected}
+                      data-testid={`priority-${p}`}
+                      onClick={() => handlePriorityChange(task, p)}
+                      size="small"
+                      variant="contained"
+                      disableElevation
+                      className={`priority-btn${selected ? ' priority-btn--selected' : ''}`}
+                    >
+                      {p}
+                    </Button>
+                  );
+                })}
+              </Box>
               {task.due_date && (
                 <Chip
                   icon={<EventIcon sx={{ fontSize: 14 }} />}
@@ -244,19 +273,16 @@ function TaskList({ onEdit }) {
                 >
                   <EditIcon fontSize="small" />
                 </IconButton>
-                <IconButton 
-                  aria-label="delete" 
+                <Button
+                  aria-label="delete"
                   onClick={() => handleDelete(task.id)}
                   size="small"
-                  sx={{
-                    color: '#f44336',
-                    '&:hover': {
-                      background: 'rgba(244, 67, 54, 0.1)',
-                    }
-                  }}
+                  variant="outlined"
+                  color="error"
+                  sx={{ textTransform: 'none', minWidth: 0, py: 0 }}
                 >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                  Delete
+                </Button>
               </Box>
             </Box>
           </ListItem>

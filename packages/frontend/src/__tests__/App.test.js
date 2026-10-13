@@ -150,4 +150,63 @@ describe('TODO App', () => {
       expect(screen.getByText('No tasks found.')).toBeInTheDocument();
     });
   });
+
+  test('shows radio-style priority buttons with sketch colors and P3 fallback', async () => {
+    server.use(
+      rest.get('/api/tasks', (req, res, ctx) =>
+        res(ctx.json([
+          { id: 1, title: 'High', priority: 'P1', completed: 0 },
+          { id: 2, title: 'Legacy', completed: 0 },
+        ]))
+      )
+    );
+    await act(async () => {
+      render(<App />);
+    });
+    await waitFor(() => expect(screen.getAllByTestId('priority-P1')).toHaveLength(2));
+    const [highP1, legacyP1] = screen.getAllByTestId('priority-P1');
+    const [, legacyP3] = screen.getAllByTestId('priority-P3');
+    expect(highP1).toHaveAttribute('aria-checked', 'true');
+    expect(highP1).toHaveClass('priority-btn--selected');
+    expect(legacyP1).toHaveAttribute('aria-checked', 'false');
+    expect(legacyP1).not.toHaveClass('priority-btn--selected');
+    expect(legacyP3).toHaveAttribute('aria-checked', 'true');
+    expect(legacyP3).toHaveClass('priority-btn--selected');
+  });
+
+  test('saves a new priority when a priority button is clicked', async () => {
+    let put;
+    server.use(
+      rest.get('/api/tasks', (req, res, ctx) =>
+        res(ctx.json([{ id: 1, title: 'Task', description: 'd', due_date: null, priority: 'P3', completed: 0 }]))
+      ),
+      rest.put('/api/tasks/:id/priority', (req, res, ctx) => {
+        put = req.body;
+        return res(ctx.json({ id: 1, ...req.body, completed: 0 }));
+      })
+    );
+    const user = userEvent.setup();
+    await act(async () => {
+      render(<App />);
+    });
+    await user.click(await screen.findByTestId('priority-P1'));
+    await waitFor(() => expect(put).toEqual({ priority: 'P1' }));
+  });
+
+  test('sends default priority P3 when adding a task', async () => {
+    let posted;
+    server.use(
+      rest.post('/api/tasks', (req, res, ctx) => {
+        posted = req.body;
+        return res(ctx.status(201), ctx.json({ id: 3, ...req.body, completed: 0 }));
+      })
+    );
+    const user = userEvent.setup();
+    await act(async () => {
+      render(<App />);
+    });
+    await user.type(screen.getByTestId('title-input'), 'New');
+    await user.click(screen.getByTestId('submit-task'));
+    await waitFor(() => expect(posted.priority).toBe('P3'));
+  });
 });
