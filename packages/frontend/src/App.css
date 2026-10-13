@@ -100,16 +100,16 @@
   font-size: 0.7rem;
   font-weight: 600;
   color: #ffffff;
-  background-color: #7a7a7a;
+  background-color: #7A7A7A;
 }
 
 .MuiButton-root.priority-btn:hover {
-  background-color: #7a7a7a;
+  background-color: #7A7A7A;
   opacity: 0.85;
 }
 
 .MuiButton-root.priority-btn.priority-btn--selected,
 .MuiButton-root.priority-btn.priority-btn--selected:hover {
   color: #212121;
-  background-color: #07f2e6;
+  background-color: #07F2E6;
 }
